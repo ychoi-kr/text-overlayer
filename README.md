@@ -15,4 +15,3 @@ npm start
 
 Enjoy enhancing your images with personalized text overlays!
 
-For more details on contributing or the license, refer to the full documentation on GitHub.
