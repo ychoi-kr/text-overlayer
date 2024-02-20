@@ -108,23 +108,6 @@ function App() {
     if (!isImageLoaded) return;
   };
 
-  function drawOverlays() {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    overlays.forEach(overlay => {
-      ctx.font = `${overlay.fontSize}px Arial`;
-      ctx.fillStyle = overlay.textColor;
-      // Use your existing text wrapping logic if necessary
-      ctx.fillText(overlay.text, overlay.x, overlay.y);
-    });
-  }
-
-  const applyOverlay = () => {
-    const newOverlay = { text: editedText, x: rect.x, y: rect.y, fontSize, textColor };
-    setOverlays([...overlays, newOverlay]);
-    drawOverlays(); // Ensure this also clears the previous selection rectangle
-  };
-
   function wrapText(context, text, x, y, maxWidth, lineHeight) {
     const words = text.split(' ');
     let line = '';
