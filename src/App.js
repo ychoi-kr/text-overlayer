@@ -87,13 +87,26 @@ function App() {
     context.fillText(line, x, y); // Draw the last line
   }
   
+  // indicate if the background is transparent
+  const [isBackgroundTransparent, setIsBackgroundTransparent] = useState(false);
+  
+  // Function to handle setting the background to transparent
+  const makeBackgroundTransparent = () => {
+    setIsBackgroundTransparent(true);
+    setBackgroundColor('transparent'); // Use 'transparent' as a placeholder
+  };
+
   const handleOverlayText = () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     redrawImage(); // Ensure the latest image is displayed without previous rectangles/texts
-    // 배경색 채우기
-    ctx.fillStyle = backgroundColor;
-    ctx.fillRect(rect.x, rect.y, rect.width, Math.max(20, rect.height)); // 텍스트 높이를 고려하여 배경을 채웁니다.
+
+    if (!isBackgroundTransparent) {
+      // Fill background color if not transparent
+      ctx.fillStyle = backgroundColor;
+      ctx.fillRect(rect.x, rect.y, rect.width, Math.max(20, rect.height));
+    }
+    
     // 텍스트 그리기
     const lineHeight = fontSize * 1.2; // Adjust line height based on font size
     ctx.font = `${fontSize}px Arial`;
@@ -151,6 +164,7 @@ function App() {
           <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} />
           <label>Background Color: </label>
           <input type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} />
+          <button onClick={makeBackgroundTransparent}>Make Background Transparent</button>
         </div>
         <button onClick={handleOverlayText}>Overlay Text</button>
         <button onClick={handleDownloadImage}>Download Image</button>
