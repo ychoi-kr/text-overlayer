@@ -11,6 +11,7 @@ function App() {
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const canvasRef = useRef(null);
   const imageRef = useRef(null);
+  const [fontSize, setFontSize] = useState(16); // Default font size
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -74,7 +75,7 @@ function App() {
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(rect.x, rect.y, rect.width, Math.max(20, rect.height)); // 텍스트 높이를 고려하여 배경을 채웁니다.
     // 텍스트 그리기
-    ctx.font = "16px Arial";
+    ctx.font = `${fontSize}px Arial`;
     ctx.fillStyle = textColor;
     ctx.fillText(editedText, rect.x, rect.y + 16, rect.width); // Adjust text position if necessary
   };
@@ -114,6 +115,15 @@ function App() {
           onChange={(e) => setEditedText(e.target.value)}
           placeholder="Edit Text Here"
         />
+        <div>
+          <label>Font Size: </label>
+          <input
+            type="number"
+            value={fontSize}
+            onChange={(e) => setFontSize(e.target.value)}
+            min="1" // Prevents font size from being less than 1
+          />
+        </div>
         <div>
           <label>Text Color: </label>
           <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} />
