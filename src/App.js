@@ -86,6 +86,15 @@ function App() {
     ctx.drawImage(imageRef.current, 0, 0, canvas.width, canvas.height);
   };
 
+  const handleDownloadImage = () => {
+    const canvas = canvasRef.current;
+    const image = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+    const link = document.createElement('a');
+    link.download = 'overlay-image.png';
+    link.href = image;
+    link.click();
+  };
+
   return (
     <div>
       <input type="file" onChange={handleFileChange} />
@@ -112,6 +121,7 @@ function App() {
           <input type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} />
         </div>
         <button onClick={handleOverlayText}>Overlay Text</button>
+        <button onClick={handleDownloadImage}>Download Image</button>
       </div>
     </div>
   );
