@@ -1,5 +1,4 @@
-import React, { useRef, useState } from 'react';
-import Tesseract from 'tesseract.js';
+import React, { useEffect, useRef, useState } from 'react';
 
 function App() {
   const [ocr, setOcr] = useState('');
@@ -12,8 +11,10 @@ function App() {
   const canvasRef = useRef(null);
   const imageRef = useRef(null);
   const [fontSize, setFontSize] = useState(16); // Default font size
+  const [overlays, setOverlays] = useState([]);
 
   const handleFileChange = (e) => {
+    console.log("handleFileChange 호출됨");
     const file = e.target.files[0];
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -27,27 +28,65 @@ function App() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, img.width, img.height);
         setIsImageLoaded(true);
+        imageRef.current = img;
       };
       img.src = e.target.result;
-      imageRef.current = img;
     };
     reader.readAsDataURL(file);
   };
 
-  const handleMouseDown = (e) => {
-    if (!isImageLoaded) return;
+  const redrawCanvasWithOverlays = () => {
     const canvas = canvasRef.current;
-    const rectStart = canvas.getBoundingClientRect();
-    setRect({
-      x: e.clientX - rectStart.left,
-      y: e.clientY - rectStart.top,
-      width: 0,
-      height: 0,
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // 캔버스를 클리어
+    ctx.drawImage(imageRef.current, 0, 0, canvas.width, canvas.height); // 배경 이미지 다시 그리기
+  
+    overlays.forEach((overlay) => {
+      // 배경색 설정 (선택적)
+      if (overlay.backgroundColor !== 'transparent') {
+        ctx.fillStyle = overlay.backgroundColor;
+        ctx.fillRect(overlay.x, overlay.y, overlay.width, overlay.height);
+      }
+      // 텍스트 그리기
+      ctx.font = `${overlay.fontSize}px Arial`;
+      ctx.fillStyle = overlay.textColor;
+      const lineHeight = overlay.fontSize * 1.2;
+      wrapText(ctx, overlay.text, overlay.x, overlay.y + lineHeight, overlay.width, lineHeight);
     });
+  };
+
+  const applyTextOverlay = () => {
+    console.log("applyTextOverlay 호출됨");
+    console.log("적용 전 오버레이 상태:", overlays);
+    const newOverlay = {
+        text: editedText,
+        x: rect.x,
+        y: rect.y,
+        fontSize,
+        textColor,
+    };
+    setOverlays([...overlays, newOverlay]);
+    redrawCanvasWithOverlays();
+
+    console.log("적용 후 오버레이 상태:", overlays);
+  };
+
+  const handleMouseDown = (e) => {
+    console.log("handleMouseDown 호출됨");
+    if (!isImageLoaded) return;
+  
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - canvasRect.left;
+    const y = e.clientY - canvasRect.top;
+  
+    redrawCanvasWithOverlays();
+
     setIsDragging(true);
+    setRect({ x, y, width: 0, height: 0 });
   };
 
   const handleMouseMove = (e) => {
+    console.log("handleMouseMove 호출됨");
     if (!isImageLoaded || !isDragging) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -55,16 +94,35 @@ function App() {
     const width = e.clientX - rectEnd.left - rect.x;
     const height = e.clientY - rectEnd.top - rect.y;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(imageRef.current, 0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = 'red';
-    ctx.strokeRect(rect.x, rect.y, width, height);
     setRect({ ...rect, width, height });
+
+    // 임시 사각형 그리기
+    redrawCanvasWithOverlays(); // 기존 오버레이 다시 그리기
+    ctx.strokeStyle = 'red'; // 사각형 테두리 색상 설정
+    ctx.strokeRect(rect.x, rect.y, width, height); // 실시간 사각형 그리기
   };
 
   const handleMouseUp = (e) => {
+    console.log("handleMouseUp 호출됨");
     setIsDragging(false);
     if (!isImageLoaded) return;
+  };
+
+  function drawOverlays() {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    overlays.forEach(overlay => {
+      ctx.font = `${overlay.fontSize}px Arial`;
+      ctx.fillStyle = overlay.textColor;
+      // Use your existing text wrapping logic if necessary
+      ctx.fillText(overlay.text, overlay.x, overlay.y);
+    });
+  }
+
+  const applyOverlay = () => {
+    const newOverlay = { text: editedText, x: rect.x, y: rect.y, fontSize, textColor };
+    setOverlays([...overlays, newOverlay]);
+    drawOverlays(); // Ensure this also clears the previous selection rectangle
   };
 
   function wrapText(context, text, x, y, maxWidth, lineHeight) {
@@ -97,23 +155,27 @@ function App() {
   };
 
   const handleOverlayText = () => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    redrawImage(); // Ensure the latest image is displayed without previous rectangles/texts
+    console.log("handleOverlayText 호출됨");
+    const newOverlay = {
+      text: editedText,
+      x: rect.x,
+      y: rect.y,
+      width: rect.width, // 필요한 경우 width와 height도 저장
+      height: Math.max(20, rect.height),
+      fontSize: fontSize,
+      textColor: textColor,
+      backgroundColor: isBackgroundTransparent ? 'transparent' : backgroundColor,
+    };
 
-    if (!isBackgroundTransparent) {
-      // Fill background color if not transparent
-      ctx.fillStyle = backgroundColor;
-      ctx.fillRect(rect.x, rect.y, rect.width, Math.max(20, rect.height));
-    }
-    
-    // 텍스트 그리기
-    const lineHeight = fontSize * 1.2; // Adjust line height based on font size
-    ctx.font = `${fontSize}px Arial`;
-    ctx.fillStyle = textColor;
-    // Call wrapText function to draw text with wrapping
-    wrapText(ctx, editedText, rect.x, rect.y + lineHeight, rect.width, lineHeight);
+    // 오버레이 상태 업데이트
+    setOverlays(prevOverlays => [...prevOverlays, newOverlay]);
   };
+
+  useEffect(() => {
+    if (isImageLoaded) {
+      redrawCanvasWithOverlays();
+    }
+  }, [overlays]); // overlays 상태가 변경될 때마다 실행
 
   const redrawImage = () => {
     const canvas = canvasRef.current;
