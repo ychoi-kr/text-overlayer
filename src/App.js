@@ -67,6 +67,26 @@ function App() {
     if (!isImageLoaded) return;
   };
 
+  function wrapText(context, text, x, y, maxWidth, lineHeight) {
+    const words = text.split(' ');
+    let line = '';
+    let testLine = '';
+    let testWidth = 0;
+  
+    for (let n = 0; n < words.length; n++) {
+      testLine = line + words[n] + ' ';
+      testWidth = context.measureText(testLine).width;
+      if (testWidth > maxWidth && n > 0) {
+        context.fillText(line, x, y);
+        line = words[n] + ' ';
+        y += lineHeight;
+      } else {
+        line = testLine;
+      }
+    }
+    context.fillText(line, x, y); // Draw the last line
+  }
+  
   const handleOverlayText = () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -75,9 +95,11 @@ function App() {
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(rect.x, rect.y, rect.width, Math.max(20, rect.height)); // 텍스트 높이를 고려하여 배경을 채웁니다.
     // 텍스트 그리기
+    const lineHeight = fontSize * 1.2; // Adjust line height based on font size
     ctx.font = `${fontSize}px Arial`;
     ctx.fillStyle = textColor;
-    ctx.fillText(editedText, rect.x, rect.y + 16, rect.width); // Adjust text position if necessary
+    // Call wrapText function to draw text with wrapping
+    wrapText(ctx, editedText, rect.x, rect.y + lineHeight, rect.width, lineHeight);
   };
 
   const redrawImage = () => {
